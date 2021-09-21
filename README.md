@@ -66,3 +66,43 @@ docker build --tag my_image:1.1 -f Dockerfile2222 --pull ./
 # 도커 명령어로 CMD 덮어쓰기. -it: 커맨드를 같이 입력하기 위해 bash에 터미널 연결. httpd-foreground 명령어 수행
 # docker run -dit -p 9999:80 my_image:1.0.0 /bin/sh -c httpd-foreground --name mytest
 ```
+
+### Docker Compose
+
+컨테이너 실행 설정이 기록된 파일을 이용하여 여러개의 컨테이너를 실행시킬 수 있다.
+
+-: 배열
+
+**docker-compose.yaml**
+
+```tsx
+# stable version
+version: "3"
+
+# 설정할 컨테이너들
+services:
+  app:
+    build:
+      context: ./01_FLASK_DOCKER
+      dockerfile: Dockerfile
+    links:
+      - "db:baeumdb"
+    ports:
+      - "80:8080" 
+    container_name: appcontainer
+		# 컨테이너 실행 순서
+    depends_on:
+      - db
+
+  db:
+    image: mysql:5.7
+    restart: always
+    volumes:
+      - ./mysqldata:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=12345678
+      - MYSQL_DATABASE=baeumdb
+    ports: 
+      - "3306:3306"
+    container_name: dbcontainer
+```
