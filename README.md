@@ -106,3 +106,53 @@ services:
       - "3306:3306"
     container_name: dbcontainer
 ```
+### nginx
+
+```tsx
+/etc/nginx/
+	- nginx.conf (sites-enabled 폴더의 파일을 include)
+	- sites-enabled (sites-available 폴더의 파일을 심볼릭 링크로 복사해놓음)
+	- sites-available (mysite.com.conf, mysite2.com.conf, 등이 있고, 현재 사용되는 설정들만 enabled폴더에 심볼릭 링크 해놓기)
+```
+
+**/etc/nginx/sites-available/default**
+
+```tsx
+# Default server configuration
+#
+server {
+	listen 80 default_server; //default_server: 모든 웹서버 요청 허용
+	listen [::]:80 default_server;
+	...
+
+	root /var/www/html; // 기본 주소만 입력했을때 기본 폴더 설정.
+
+	# Add index.php to the list if you are using PHP
+	index index.html index.htm index.nginx-debian.html;
+
+	server_name _; // 구매한 도메인이 있다면 입력 hyom.com www.hyom.com
+	
+	...
+}
+```
+
+```tsx
+	root /var/www/html; // 기본 주소만 입력했을때 기본 폴더 설정.
+
+	# Add index.php to the list if you are using PHP
+	index index.html index.htm index.nginx-debian.html;
+
+	server_name _;
+
+	// 루트폴더 변경. index파일명은 따로 설정하지 않으면 위와 동일. 마치 변수같다.
+	// www.mysite.com/blog/index.html -> /var/www/blog/index.html
+	location /blog {
+		root /var/www
+	}
+
+	location / {
+		# First attempt to serve request as file, then
+		# as directory, then fall back to displaying a 404.
+		try_files $uri $uri/ =404;
+	}
+```
