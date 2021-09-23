@@ -106,7 +106,15 @@ services:
       - "3306:3306"
     container_name: dbcontainer
 ```
+
 ### nginx
+
+어떤 버전이든 설정파일 이름은 nginx.conf
+→ server 설정 찾기
+→ include되어있다면 default 혹은 default.conf 같은 파일을 찾을 수 있음.
+
+apache2는 httpd.conf
+
 
 ```tsx
 /etc/nginx/
@@ -155,4 +163,201 @@ server {
 		# as directory, then fall back to displaying a 404.
 		try_files $uri $uri/ =404;
 	}
+```
+
+### Reverse Proxy 포트로 구분하기
+
+docker-compose.yml
+
+```tsx
+version: "3"
+
+services:
+    nginxproxy:
+        image: nginx:1.18.0
+				# 호스트와 포트포워딩
+        ports:
+            - "8080:8080"
+            - "8081:8081"
+        restart: always
+				# 프락시 설정이 있는 conf파일을 바운딩
+        volumes:
+            - "./nginx/nginx.conf:/etc/nginx/nginx.conf"
+
+    nginx:
+        depends_on:
+            - nginxproxy
+        image: nginx:1.18.0
+        restart: always
+
+    apache:
+        depends_on:
+            - nginxproxy
+        image: httpd:2.4.46
+        restart: always
+```
+
+**nginx/nginx.conf**
+
+```tsx
+user nginx; // www-data; 동일
+worker_processes  auto;
+
+// 에러로그 저장
+error_log  /var/log/nginx/error.log warn;
+pid        /var/run/nginx.pid;
+
+events {
+    worker_connections 1024; // 이벤트를 동시에 몇개까지 지원할것인지
+}
+
+http {
+    include       /etc/nginx/mime.types;// 확장자가 무엇을 뜻하는지 기재한곳
+    default_type  application/octet-stream;// 기재되지 않은 확장자는 표준 인코딩으로 기본 설정
+
+		// nginx에서 사용하는 변수들
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+    access_log  /var/log/nginx/access.log  main;
+    sendfile on;
+    keepalive_timeout 65;
+
+    upstream docker-nginx {
+				// docker-compose.yml에서 설정했던 이름. link 설정을 하지 않으면 이름 그대로 사용한다.
+        server nginx:80;
+    }
+
+    upstream docker-apache {
+        server apache:80;
+    }
+
+// 커스텀한 설정과 겹치지 않도록 삭제함
+# include /etc/nginx/modules-enabled/*.conf;
+// deault에 있던 server를 이 파일에 기재함
+    server {
+        listen 8080;
+
+        location / {
+            proxy_pass         http://docker-nginx; // 8080포트의 모든 경로에 대한 요청은 여기로 보낸다.
+            proxy_redirect     off; // was(내부서버) 정보 숨기기
+            proxy_set_header   Host $host; // 내가(프록시) 누구인지 기록
+            proxy_set_header   X-Real-IP $remote_addr; // 클라이언트의 IP를 기록.
+            proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for; // 여러단계의 프록시가 있을 경우 이전 프록시들을 기록
+            proxy_set_header   X-Forwarded-Host $server_name; // 클라이언트의 호스트명 기록
+        }
+    }
+
+    server {
+        listen 8081;
+
+        location / {
+            proxy_pass         http://docker-apache;
+            proxy_redirect     off;
+            proxy_set_header   Host $host;
+            proxy_set_header   X-Real-IP $remote_addr;
+            proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header   X-Forwarded-Host $server_name;
+        }
+    }
+}
+```
+
+### Reverse Proxy 폴더로 구분하기
+
+[reverseproxy.com:80/blog](http://reverseproxy.com:80/blog) → http://docker-nginx:80/blog
+→ blog를 제외해서 루트폴더로 설정하기 http://docker-nginx:80/
+
+```tsx
+user nginx;
+worker_processes  auto;
+
+error_log  /var/log/nginx/error.log warn;
+pid        /var/run/nginx.pid;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+    access_log  /var/log/nginx/access.log  main;
+    sendfile on;
+    keepalive_timeout 65;
+
+    upstream docker-nginx {
+        server nginx:80;
+    }
+
+    upstream docker-apache {
+        server apache:80;
+    }
+
+    server {
+        listen 80;
+
+				# latest 버전에서 index.html이 있는 경로 (설정파일은 nginx.conf)
+        root /usr/share/nginx/html;
+
+        location /blog {
+            proxy_pass         http://docker-nginx;
+            proxy_redirect     off;
+            proxy_set_header   Host $host;
+            proxy_set_header   X-Real-IP $remote_addr;
+            proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header   X-Forwarded-Host $server_name;
+				}
+
+        location /community {
+            proxy_pass         http://docker-apache;
+            proxy_redirect     off;
+            proxy_set_header   Host $host;
+            proxy_set_header   X-Real-IP $remote_addr;
+            proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header   X-Forwarded-Host $server_name;
+        }
+    }
+	}
+}
+```
+
+→ blog를 제외해서 루트폴더로 설정하기 http://docker-nginx:80/
+
+새로운 서비스를 추가해서 기존 서버와 연결하고싶은데, 이런식으로 하면 기존 서버의 폴더에 community라는 새로운 폴더를 만들어야하고 이 폴더명에 맞도록 모든 설정을 바꿔야하는 일이 생길 수 있음. 그래서 프록시에서 폴더 경로로 다른 was를 찾을때 해당 경로이름은 제외하면서 was와 연결만 시켜줌
+
+한마디로 proxy에서 어떤 경로를 사용하든 was의 루트폴더 변경없이 사용할수있게 하는 법.
+
+```tsx
+만약 루트가 ..../html 이고 blog로 연결된다면
+/html/blog 이렇게 됨 (html 폴더 옆에 blog를 만드는 것이 아니다.)
+루트를 기준으로 폴더를 탐색하는 것
+```
+
+```tsx
+rewrite regex URL [flag];
+# $1: 괄호로 감싼 부분(.*).. 즉 /blog부분 제외하고 전부 선택해서 다시쓰기
+rewrite ^/blog(.*)$ $1 break;
+```
+
+### Error Page 설정
+
+```tsx
+error_page 403 404 405 505 /error.html;
+location = /error.html {
+	root /usr/share/nginx/html;
+}
+```
+
+### 캐시 설정
+
+```tsx
+location ~* \.(ico|css|js|gif|jpe?g|png)& {
+	expires max;
+	add_header Pragma public;
+	add_header Cache-Control "public, must-revalidate, proxy-revalidate";
+}
 ```
