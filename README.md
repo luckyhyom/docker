@@ -361,3 +361,52 @@ location ~* \.(ico|css|js|gif|jpe?g|png)& {
 	add_header Cache-Control "public, must-revalidate, proxy-revalidate";
 }
 ```
+
+### HTTPS
+docker-compose.yml
+
+```tsx
+version: "3"
+
+services:
+  webserver:
+    image: nginx:latest
+    container_name: proxy 
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443" # https
+    volumes:
+      - ./myweb:/usr/share/nginx/html
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./certbot-etc:/etc/letsencrypt
+
+  nginx:
+    image: nginx:latest
+    container_name: myweb
+    restart: always
+    volumes:
+      - ./myweb:/usr/share/nginx/html # 하나의 폴더를 세 컨테이너가 공유한다.
+
+  certbot:
+    depends_on:
+      - webserver
+    image: certbot/certbot
+    container_name: certbot
+    volumes:
+      - ./certbot-etc:/etc/letsencrypt
+      - ./myweb:/usr/share/nginx/html
+    command: certonly --dry-run --webroot --webroot-path=/usr/share/nginx/html --email test@test.com --agree-tos --no-eff-email --keep-until-expiring -d baeum.com -d www.baeum.com
+```
+nginx.conf
+
+```tsx
+...
+server {
+        location ~ /.well-known/acme-challenge {
+                allow all;
+                root /usr/share/nginx/html;
+                try_files $uri =404;
+        }
+    }
+```
