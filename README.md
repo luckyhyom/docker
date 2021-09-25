@@ -106,6 +106,31 @@ services:
       - "3306:3306"
     container_name: dbcontainer
 ```
+**Volume**
+
+- 폴더 공유
+    - 컨테이너→호스트라면. 호스트의 폴더가 비어있는지 체크
+- 호스트파일 컨테이너에 복사
+- 도커볼륨 생성
+
+mysql에 들어있는 파일은 직접 살펴볼 일이 없기때문에 호스트서버에서 관리하지 않아도 된다. 다만 컨테이너가 종료되어도 데이터는 유지해야하는데.. 이럴때 호스트PC와 연결하지 않고, 도커 볼륨으로 관리할 수 있다.
+
+```tsx
+db:
+	image: mysql:5.7
+	containder_name: mysqldb
+	vollumes:
+		- "mydb:/var/lib/mysql"
+...
+```
+
+작업시 volum때문에 정상 작동이 안될 수 있으므로 모든 볼륨을 삭제하고 작업하는 것이 좋음 (염두해둘것)
+
+```tsx
+docker volmue prune
+docker volmue prune -a --volume // 이미지, 볼륨, 네트워크 삭제
+```
+
 
 ### nginx
 
