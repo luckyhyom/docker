@@ -387,7 +387,7 @@ location ~* \.(ico|css|js|gif|jpe?g|png)& {
 }
 ```
 
-### HTTPS
+### HTTPS(1)
 docker-compose.yml
 
 ```tsx
@@ -434,4 +434,73 @@ server {
                 try_files $uri =404;
         }
     }
+```
+
+### HTTPS(2)
+
+--dry-run 옵션 제거
+
+nginx.conf
+```tsx
+user nginx;
+worker_processes  auto;
+
+error_log  /var/log/nginx/error.log warn;
+pid        /var/run/nginx.pid;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" "$request_uri" "$uri"'
+                      '"$http_user_agent" "$http_x_forwarded_for"';    
+    access_log  /var/log/nginx/access.log  main;
+    sendfile on;
+    keepalive_timeout 65;
+
+    upstream docker-web {
+        server nginx:80;
+    }
+
+    server {
+        listen 80;
+        server_name makevalue.net www.makevalue.net;
+
+        location ~ /.well-known/acme-challenge {
+                allow all;
+                root /usr/share/nginx/html;
+                try_files $uri =404;
+        }
+
+        location / {
+                return 301 https://$host$request_uri;
+        }    
+    }
+
+    server {
+        listen 443 ssl;
+        server_name makevalue.net www.makevalue.net;
+        
+        #ssl_certificate /etc/letsencrypt/live/makevalue.net/fullchain.pem;
+        #ssl_certificate_key /etc/letsencrypt/live/makevalue.net/privkey.pem;
+        #include /etc/letsencrypt/options-ssl-nginx.conf; # 보안 강화를 위한 옵션 추가
+        #ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;   # 보안 강화를 위한 옵션 추가
+
+        location / {
+            proxy_pass         http://docker-web;       # docker-web 컨테이너로 포워딩
+            proxy_redirect     off;                     # 서버 응답 헤더의 주소 변경 (불필요)
+            proxy_set_header   Host $host;
+            proxy_set_header   X-Real-IP $remote_addr;
+            proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header   X-Forwarded-Host $server_name;
+	    proxy_set_header   X-Forwarded-Proto $scheme;
+        }
+    }
+}
+
+
 ```
