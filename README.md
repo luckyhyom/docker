@@ -440,9 +440,10 @@ server {
 
 ### HTTPS(2)
 
---dry-run 옵션 제거
+—dry-run 옵션 제거
 
 nginx.conf
+
 ```tsx
 user nginx;
 worker_processes  auto;
@@ -459,7 +460,7 @@ http {
     default_type  application/octet-stream;
     log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
                       '$status $body_bytes_sent "$http_referer" "$request_uri" "$uri"'
-                      '"$http_user_agent" "$http_x_forwarded_for"';    
+                      '"$http_user_agent" "$http_x_forwarded_for"';
     access_log  /var/log/nginx/access.log  main;
     sendfile on;
     keepalive_timeout 65;
@@ -480,17 +481,17 @@ http {
 
         location / {
                 return 301 https://$host$request_uri;
-        }    
+        }
     }
 
     server {
         listen 443 ssl;
         server_name makevalue.net www.makevalue.net;
-        
-        #ssl_certificate /etc/letsencrypt/live/makevalue.net/fullchain.pem;
-        #ssl_certificate_key /etc/letsencrypt/live/makevalue.net/privkey.pem;
-        #include /etc/letsencrypt/options-ssl-nginx.conf; # 보안 강화를 위한 옵션 추가
-        #ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;   # 보안 강화를 위한 옵션 추가
+
+        ssl_certificate /etc/letsencrypt/live/makevalue.net/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/makevalue.net/privkey.pem;
+        include /etc/letsencrypt/options-ssl-nginx.conf; # 보안 강화를 위한 옵션 추가
+        ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;   # 보안 강화를 위한 옵션 추가
 
         location / {
             proxy_pass         http://docker-web;       # docker-web 컨테이너로 포워딩
@@ -499,10 +500,27 @@ http {
             proxy_set_header   X-Real-IP $remote_addr;
             proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header   X-Forwarded-Host $server_name;
-	    proxy_set_header   X-Forwarded-Proto $scheme;
+				    proxy_set_header   X-Forwarded-Proto $scheme;
         }
     }
 }
+```
 
+필요한 설정 파일 다운로드
 
+```tsx
+cd certbot-etc // ssl 인증 파일이 들어있는 폴더
+curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf > options-ssl-nginx.conf
+curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot/certbot/ssl-dhparams.pem > ssl-dhparams.pem
+```
+
+### crontab을 이용하여 인증서 재발급
+
+—keep-until-expiring옵션을 —force-renewal 로 변경 (크론탭 설정 전에 —dry-run으로 먼저 테스트할것)
+
+```tsx
+crontab -e
+// *: 주기 설정
+* * * * * docker-compose -f 절대경로/docker-compose.yml restart certbot >> [log저장할 폴더의 경로/status_check.log] 2>&1
+* * * * * rm -rf [로그파일 경로/로그파일] 2>&1
 ```
