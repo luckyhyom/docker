@@ -288,6 +288,8 @@ http {
 }
 ```
 
+[location 설정](https://lahuman.github.io/nginx_location_options/)
+
 ### Reverse Proxy 폴더로 구분하기
 
 [reverseproxy.com:80/blog](http://reverseproxy.com:80/blog) → http://docker-nginx:80/blog
