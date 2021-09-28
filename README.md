@@ -131,6 +131,14 @@ docker volmue prune
 docker volmue prune -a --volume // 이미지, 볼륨, 네트워크 삭제
 ```
 
+### Command
+
+```tsx
+docker-compose up -d
+docker-compose down
+docker-compose -f 절대경로/docker-compose.yml
+docker-compose restart [컨테이너 이름]
+```
 
 ### nginx
 
