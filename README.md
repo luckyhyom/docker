@@ -528,7 +528,9 @@ curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot/certbot
 
 ```tsx
 crontab -e
-// *: 주기 설정
+# docker-compose 실행파일 위치 (which docker-compose)
+PATH=/usr/local/bin
+# *: 주기 설정
 * * * * * docker-compose -f 절대경로/docker-compose.yml restart certbot >> [log저장할 폴더의 경로/status_check.log] 2>&1
 * * * * * rm -rf [로그파일 경로/로그파일] 2>&1
 ```
