@@ -1,0 +1,13 @@
+.custom #cse {
+float: right;
+margin-top: 1.2em;
+width: 250px;
+}
+.custom .cse .gsc-control-cse, .custom .gsc-control-cse {
+background: none;
+padding: 0;
+border: 0;
+}
+.gsc-input-box {
+border-radius: 4px;
+}

@@ -1,0 +1,22 @@
+version: "3"
+
+services:
+    nginxproxy:
+        image: nginx:1.18.0
+        ports:
+            - "80:80"
+        restart: always
+        volumes:
+            - "./nginx/nginx.conf:/etc/nginx/nginx.conf"
+
+    nginx:
+        depends_on:
+            - nginxproxy
+        image: nginx:1.18.0
+        restart: always
+
+    apache:
+        depends_on:
+            - nginxproxy
+        image: httpd:2.4.46
+        restart: always
