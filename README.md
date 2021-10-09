@@ -142,6 +142,12 @@ docker-compose restart [컨테이너 이름]
 
 ### nginx
 
+reverse proxy 역할 (로드밸런싱 / https 인증 / 웹서버 / was 포트 숨기기)
+구현 방법
+1. nginx:80(→443) → [localhost:3000](http://localhost:3000) (was의 포트는 임의로 지정하고 방화벽으로 외부의 접근을 막는다.)
+2. nginx:80(→443) → docker-Host:80
+3. nginx:80(→443) → anotherHost:443
+
 어떤 버전이든 설정파일 이름은 nginx.conf
 → server 설정 찾기
 → include되어있다면 default 혹은 default.conf 같은 파일을 찾을 수 있음.
