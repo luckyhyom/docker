@@ -1,0 +1,3 @@
+# 도커 이미지의 노드모듈이 덮어씌워지지 않도록.
+node_modules
+npm-debug.log
