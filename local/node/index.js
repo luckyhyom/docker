@@ -3,7 +3,10 @@ const app = express();
 const port = 3000;
 
 app.get('/', (req, res) => {
-  res.send('this is from docker container. 나는 연봉 오백억. 알겠냐! 너무 좋구요')
+  res.send('this is from docker container');
+});
+app.get('/default', (req, res) => {
+  res.send('default!');
 });
 
 app.listen(port, () => {

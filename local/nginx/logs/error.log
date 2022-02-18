@@ -1,0 +1,14 @@
+2022/02/17 15:39:47 [notice] 1#1: using the "epoll" event method
+2022/02/17 15:39:47 [notice] 1#1: nginx/1.21.6
+2022/02/17 15:39:47 [notice] 1#1: built by gcc 10.2.1 20210110 (Debian 10.2.1-6) 
+2022/02/17 15:39:47 [notice] 1#1: OS: Linux 5.10.47-linuxkit
+2022/02/17 15:39:47 [notice] 1#1: getrlimit(RLIMIT_NOFILE): 1048576:1048576
+2022/02/17 15:39:47 [notice] 1#1: start worker processes
+2022/02/17 15:39:47 [notice] 1#1: start worker process 30
+2022/02/18 01:28:52 [notice] 1#1: signal 3 (SIGQUIT) received, shutting down
+2022/02/18 01:28:52 [notice] 30#30: gracefully shutting down
+2022/02/18 01:28:52 [notice] 30#30: exiting
+2022/02/18 01:28:52 [notice] 30#30: exit
+2022/02/18 01:28:52 [notice] 1#1: signal 17 (SIGCHLD) received from 30
+2022/02/18 01:28:52 [notice] 1#1: worker process 30 exited with code 0
+2022/02/18 01:28:52 [notice] 1#1: exit
